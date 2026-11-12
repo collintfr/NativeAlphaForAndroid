@@ -18,6 +18,8 @@
         android:visibility="gone"
         app:trackThickness="3dp" />
 
+    <include layout="@layout/view_limit_overlay" />
+
     <View
         android:id="@+id/anchorCenterScreen"
         android:layout_width="1dp"

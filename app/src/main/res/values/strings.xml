@@ -208,4 +208,13 @@
     <string name="error_title_safebrowsing">Deceptive or harmful site blocked</string>
     <string name="error_detail_safebrowsing">This site was reported as unsafe.</string>
     <string name="error_title_generic">This page couldn’t be loaded</string>
+    <string name="nav_blocked">%1$s isn’t part of this web app. Navigation blocked.</string>
+    <string name="nav_prompt_title">Leave this web app for %1$s?</string>
+    <string name="nav_open_here_once">Open here once</string>
+    <string name="nav_always_allow">Always allow %1$s in this web app</string>
+    <string name="limit_reached_title">Daily limit reached</string>
+    <string name="limit_reached_warn_text">You’ve used this web app for %1$s today, which is your daily limit.</string>
+    <string name="limit_reached_block_text">You’ve used this web app for %1$s today. It will be available again tomorrow.</string>
+    <string name="limit_near">%1$s left of today’s limit</string>
+    <string name="limit_snooze">5 more minutes</string>
 </resources>

@@ -205,6 +205,15 @@ object ShortcutHelper {
             .show()
     }
 
+    /** Most-used web apps of the last 7 days first; ties keep the user's list order. */
+    private fun usageRanking(context: Context): Comparator<WebApp> {
+        val now = System.currentTimeMillis()
+        val totals = try {
+            com.cylonid.nativealpha.usage.UsageRepository.get(context).totalsByApp(now - 7 * 86_400_000L, now)
+        } catch (e: Exception) { emptyMap() }
+        return compareByDescending<WebApp> { totals[it.ID] ?: 0L }.thenBy { it.order }
+    }
+
     // ---- Dynamic shortcuts --------------------------------------------------------------------
 
     /**
@@ -218,7 +227,7 @@ object ShortcutHelper {
             val appContext = context.applicationContext
             val max = ShortcutManagerCompat.getMaxShortcutCountPerActivity(appContext).coerceAtLeast(1)
             var apps = DataManager.getInstance().activeWebsites.toList()
-            if (ranking != null) apps = apps.sortedWith(ranking)
+            apps = apps.sortedWith(ranking ?: usageRanking(appContext))
             val shortcuts = apps.take(max).mapIndexedNotNull { i, app ->
                 buildShortcut(appContext, app, app.title, iconFor(appContext, app), i)
             }

@@ -38,6 +38,10 @@ import com.cylonid.nativealpha.model.WebApp
 import com.cylonid.nativealpha.util.Const
 import com.cylonid.nativealpha.util.EntryPointUtils
 import com.cylonid.nativealpha.util.WebViewLauncher
+import com.cylonid.nativealpha.usage.UsageGuard
+import com.cylonid.nativealpha.usage.UsageMath
+import com.google.android.material.snackbar.Snackbar
+import android.widget.TextView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import org.mozilla.geckoview.AllowOrDeny
@@ -77,6 +81,10 @@ open class BrowserActivity : AppCompatActivity() {
     private var currentlyReloading = true
     private val reloadHandler = Handler(Looper.getMainLooper())
     private var popupMenu: PopupMenu? = null
+    private lateinit var usageGuard: UsageGuard
+    private var limitBlocked = false
+    /** Off-site hosts the user allowed once ("Open here once") for this activity. */
+    private val temporarilyAllowedHosts = HashSet<String>()
 
     // ---- Activity result plumbing for prompts / permissions -----------------------------------
 
@@ -121,7 +129,10 @@ open class BrowserActivity : AppCompatActivity() {
 
         session = createSession()
         geckoView.setSession(session)
-        loadInitialPage()
+        usageGuard = UsageGuard(this, webapp, usageListener)
+        findViewById<View>(R.id.limitClose).setOnClickListener { finishAndRemoveTask() }
+        val blockedUsage = usageGuard.blockedAtLaunch()
+        if (blockedUsage != null) showLimitOverlay(blockedUsage) else loadInitialPage()
         setupGestures()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -148,14 +159,16 @@ open class BrowserActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        session.setActive(true)
+        if (!limitBlocked) session.setActive(true)
         if (webapp.isAutoreload && webapp.timeAutoreload > 0) scheduleReload()
+        usageGuard.start()
     }
 
     override fun onPause() {
         super.onPause()
         popupMenu?.dismiss()
         reloadHandler.removeCallbacksAndMessages(null)
+        usageGuard.stop()
         if (!webapp.isAllowMediaPlaybackInBackground) session.setActive(false)
         if (webapp.isClearCache || DataManager.getInstance().settings.isClearCache) {
             runtime.storageController.clearData(org.mozilla.geckoview.StorageController.ClearFlags.ALL_CACHES)
@@ -253,16 +266,60 @@ open class BrowserActivity : AppCompatActivity() {
      * navigation lock.
      */
     protected open fun interceptNavigation(uri: Uri, request: NavigationDelegate.LoadRequest): GeckoResult<AllowOrDeny>? {
-        if (webapp.isOpenUrlExternal && !isSameSite(uri)) {
-            openExternally(uri); return GeckoResult.deny()
+        if (limitBlocked) return GeckoResult.deny()
+        if (isSameSite(uri)) return null
+        val host = HostMatcher.normalize(uri.host ?: return null)
+        if (host in temporarilyAllowedHosts) return null
+        return when (webapp.effectiveNavLockMode) {
+            WebApp.NAV_LOCK_OPEN_EXTERNAL -> { openExternally(uri); GeckoResult.deny() }
+            WebApp.NAV_LOCK_BLOCK -> {
+                Snackbar.make(rootView, getString(R.string.nav_blocked, host), Snackbar.LENGTH_LONG).show()
+                GeckoResult.deny()
+            }
+            WebApp.NAV_LOCK_PROMPT -> promptForNavigation(uri, host)
+            else -> null
         }
-        return null
+    }
+
+    private fun promptForNavigation(uri: Uri, host: String): GeckoResult<AllowOrDeny> {
+        val result = GeckoResult<AllowOrDeny>()
+        var done = false
+        fun settle(v: AllowOrDeny) { if (!done) { done = true; result.complete(v) } }
+        val options = arrayOf(
+            getString(R.string.nav_open_here_once),
+            getString(R.string.nav_always_allow, HostMatcher.registrableDomain(host)),
+            getString(R.string.open_in_browser),
+        )
+        MaterialAlertDialogBuilder(this)
+            .setTitle(getString(R.string.nav_prompt_title, host))
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> { temporarilyAllowedHosts += host; settle(AllowOrDeny.ALLOW) }
+                    1 -> {
+                        val domain = HostMatcher.registrableDomain(host)
+                        val stored = DataManager.getInstance().getWebAppIgnoringGlobalOverride(webapp.ID, true)
+                        if (stored != null) {
+                            val list = stored.allowedHosts ?: mutableListOf()
+                            if (domain !in list) list += domain
+                            stored.allowedHosts = list
+                            DataManager.getInstance().replaceWebApp(stored)
+                        }
+                        webapp.allowedHosts = (webapp.allowedHosts ?: mutableListOf()).apply { if (domain !in this) add(domain) }
+                        settle(AllowOrDeny.ALLOW)
+                    }
+                    else -> { openExternally(uri); settle(AllowOrDeny.DENY) }
+                }
+            }
+            .setNegativeButton(android.R.string.cancel) { _, _ -> settle(AllowOrDeny.DENY) }
+            .setOnCancelListener { settle(AllowOrDeny.DENY) }
+            .show()
+        return result
     }
 
     protected fun isSameSite(uri: Uri): Boolean {
         val host = uri.host ?: return true
         val base = Uri.parse(webapp.baseUrl).host ?: return true
-        return HostMatcher.isSameSite(host, base, emptyList())
+        return HostMatcher.isSameSite(host, base, webapp.allowedHostList())
     }
 
     protected fun openExternally(uri: Uri) {
@@ -553,7 +610,50 @@ open class BrowserActivity : AppCompatActivity() {
         WindowInsetsControllerCompat(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
     }
 
+    // ---- Daily limit -----------------------------------------------------------------------
+
+    private val usageListener = object : UsageGuard.Listener {
+        override fun onLimitNear(usedMs: Long, limitMs: Long) {
+            Snackbar.make(rootView, getString(R.string.limit_near, UsageMath.formatDuration(limitMs - usedMs)), Snackbar.LENGTH_LONG).show()
+        }
+
+        override fun onLimitReachedWarn(usedMs: Long, limitMs: Long) {
+            if (isFinishing) return
+            MaterialAlertDialogBuilder(this@BrowserActivity)
+                .setTitle(R.string.limit_reached_title)
+                .setMessage(getString(R.string.limit_reached_warn_text, UsageMath.formatDuration(usedMs)))
+                .setCancelable(false)
+                .setPositiveButton(R.string.close_web_app) { _, _ -> usageGuard.warningDismissed(0); finishAndRemoveTask() }
+                .setNegativeButton(R.string.limit_snooze) { _, _ -> usageGuard.warningDismissed(SNOOZE_MINUTES) }
+                .show()
+        }
+
+        override fun onLimitReachedBlock(usedMs: Long, limitMs: Long) = showLimitOverlay(usedMs)
+
+        override fun onLimitCleared() = hideLimitOverlay()
+    }
+
+    private fun showLimitOverlay(usedMs: Long) {
+        limitBlocked = true
+        popupMenu?.dismiss()
+        session.setActive(false)
+        findViewById<TextView>(R.id.limitMessage).text =
+            getString(R.string.limit_reached_block_text, UsageMath.formatDuration(usedMs))
+        findViewById<View>(R.id.limitOverlay).visibility = View.VISIBLE
+        if (inFullscreen) session.exitFullScreen()
+    }
+
+    private fun hideLimitOverlay() {
+        if (!limitBlocked) return
+        limitBlocked = false
+        findViewById<View>(R.id.limitOverlay).visibility = View.GONE
+        session.setActive(true)
+        if (currentUrl == null) loadInitialPage()
+    }
+
     companion object {
+        const val SNOOZE_MINUTES = 5
+
         @JvmStatic
         fun contextIdFor(webapp: WebApp) = "nativealpha-webapp-${webapp.ID}"
     }

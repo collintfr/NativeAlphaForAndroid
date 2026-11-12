@@ -59,6 +59,33 @@ data class WebApp(var baseUrl: String, val ID: Int) {
     var alwaysUseFallbackContextMenu = false
     var adBlockSettings = mutableListOf<AdblockConfig>()
 
+    // ---- Usage controls (per web app, never inherited from the global template) ----
+    // Gson bypasses constructors for this class, so 0/null must be the sensible defaults.
+    /** Daily time limit in minutes; 0 = no limit. */
+    var dailyLimitMinutes: Int = 0
+    /** One of LIMIT_MODE_*. */
+    var limitMode: Int = LIMIT_MODE_WARN
+    /** One of NAV_LOCK_*. */
+    var navLockMode: Int = NAV_LOCK_OFF
+    /** Extra hosts (and their subdomains) the navigation lock lets through, e.g. SSO providers. */
+    var allowedHosts: MutableList<String>? = null
+
+    /** Navigation lock mode, honouring the legacy "open external URLs in browser" flag. */
+    val effectiveNavLockMode: Int
+        get() = if (navLockMode == NAV_LOCK_OFF && isOpenUrlExternal) NAV_LOCK_OPEN_EXTERNAL else navLockMode
+
+    fun allowedHostList(): List<String> = allowedHosts ?: emptyList()
+
+    companion object {
+        const val LIMIT_MODE_WARN = 0
+        const val LIMIT_MODE_BLOCK = 1
+
+        const val NAV_LOCK_OFF = 0
+        const val NAV_LOCK_OPEN_EXTERNAL = 1
+        const val NAV_LOCK_PROMPT = 2
+        const val NAV_LOCK_BLOCK = 3
+    }
+
     init {
         title = baseUrl.replace("http://", "").replace("https://", "").replace("www.", "")
         initDefaultSettings()
@@ -78,6 +105,10 @@ data class WebApp(var baseUrl: String, val ID: Int) {
         containerId = other.containerId
         isUseContainer = other.isUseContainer
         copySettings(other)
+        dailyLimitMinutes = other.dailyLimitMinutes
+        limitMode = other.limitMode
+        navLockMode = other.navLockMode
+        allowedHosts = other.allowedHosts?.toMutableList()
     }
 
 
@@ -144,6 +175,8 @@ data class WebApp(var baseUrl: String, val ID: Int) {
             activity
         )
         ShortcutHelper.deleteIcon(activity, ID)
+        com.cylonid.nativealpha.usage.UsageRepository.get(activity).deleteForWebApp(ID)
+        com.cylonid.nativealpha.browser.SessionStore.clear(activity, ID)
     }
 
 
