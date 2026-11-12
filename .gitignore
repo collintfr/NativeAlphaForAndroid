@@ -16,3 +16,10 @@ app/release/**
 app/standard/**
 app/extended/**
 app/extendedGithub/**
+
+# devenv
+.devenv*
+devenv.local.nix
+.direnv
+.android
+devenv.local.yaml
