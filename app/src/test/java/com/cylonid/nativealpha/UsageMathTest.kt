@@ -52,5 +52,6 @@ class UsageMathTest {
         assertEquals("<1m", UsageMath.formatDuration(30_000))
         assertEquals("45m", UsageMath.formatDuration(45 * min))
         assertEquals("2h 5m", UsageMath.formatDuration(125 * min))
+        assertEquals("1h", UsageMath.formatDuration(60 * min))
     }
 }

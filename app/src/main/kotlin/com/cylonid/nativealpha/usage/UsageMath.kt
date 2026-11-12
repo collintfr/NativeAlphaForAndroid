@@ -67,6 +67,7 @@ object UsageMath {
         val h = totalMin / 60
         val m = totalMin % 60
         return when {
+            h > 0 && m == 0L -> "${h}h"
             h > 0 -> "${h}h ${m}m"
             totalMin > 0 -> "${m}m"
             else -> "<1m"
