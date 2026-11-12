@@ -63,6 +63,9 @@ android {
     }
     buildTypes {
         release {
+            // Personal builds: sign with the auto-generated debug key so release (optimized) APKs
+            // install without keystore setup. Back up that key; updates need the same one.
+            signingConfig signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
