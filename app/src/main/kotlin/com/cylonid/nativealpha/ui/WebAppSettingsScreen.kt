@@ -31,6 +31,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.referentialEqualityPolicy
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -57,7 +58,9 @@ fun WebAppSettingsScreen(vm: AppViewModel, webAppId: Int, onBack: () -> Unit) {
     val initial = remember(webAppId) { vm.editableCopy(webAppId) }
     if (initial == null) { onBack(); return }
     // Copy-on-write: every change produces a new WebApp so Compose sees a new value.
-    var draft by remember(webAppId) { mutableStateOf(initial) }
+    // WebApp is a data class whose equals() only compares baseUrl and ID, so the default
+    // structural policy would drop every edit that doesn't change the URL.
+    var draft by remember(webAppId) { mutableStateOf(initial, referentialEqualityPolicy()) }
     fun update(block: WebApp.() -> Unit) { draft = WebApp(draft).apply(block) }
     val isGlobal = webAppId == AppViewModel.GLOBAL_ID
     val plus = BuildConfig.FLAVOR.contains("extended")

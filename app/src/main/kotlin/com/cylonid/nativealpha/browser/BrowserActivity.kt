@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.SpannableString
 import android.text.style.StyleSpan
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
@@ -82,6 +83,7 @@ open class BrowserActivity : AppCompatActivity() {
     private val reloadHandler = Handler(Looper.getMainLooper())
     private var popupMenu: PopupMenu? = null
     private lateinit var usageGuard: UsageGuard
+    private lateinit var ublockPanel: UblockPanel
     private var limitBlocked = false
     /** Off-site hosts the user allowed once ("Open here once") for this activity. */
     private val temporarilyAllowedHosts = HashSet<String>()
@@ -129,6 +131,7 @@ open class BrowserActivity : AppCompatActivity() {
 
         session = createSession()
         geckoView.setSession(session)
+        ublockPanel = UblockPanel(this, session).also { it.attach() }
         usageGuard = UsageGuard(this, webapp, usageListener)
         findViewById<View>(R.id.limitClose).setOnClickListener { finishAndRemoveTask() }
         val blockedUsage = usageGuard.blockedAtLaunch()
@@ -160,6 +163,8 @@ open class BrowserActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (!limitBlocked) session.setActive(true)
+        // Extensions (uBO's popup) act on the "active tab".
+        runtime.webExtensionController.setTabActive(session, true)
         if (webapp.isAutoreload && webapp.timeAutoreload > 0) scheduleReload()
         usageGuard.start()
     }
@@ -169,6 +174,7 @@ open class BrowserActivity : AppCompatActivity() {
         popupMenu?.dismiss()
         reloadHandler.removeCallbacksAndMessages(null)
         usageGuard.stop()
+        runtime.webExtensionController.setTabActive(session, false)
         if (!webapp.isAllowMediaPlaybackInBackground) session.setActive(false)
         if (webapp.isClearCache || DataManager.getInstance().settings.isClearCache) {
             runtime.storageController.clearData(org.mozilla.geckoview.StorageController.ClearFlags.ALL_CACHES)
@@ -273,6 +279,7 @@ open class BrowserActivity : AppCompatActivity() {
         return when (webapp.effectiveNavLockMode) {
             WebApp.NAV_LOCK_OPEN_EXTERNAL -> { openExternally(uri); GeckoResult.deny() }
             WebApp.NAV_LOCK_BLOCK -> {
+                Log.i(TAG, "navigation lock blocked $host")
                 Snackbar.make(rootView, getString(R.string.nav_blocked, host), Snackbar.LENGTH_LONG).show()
                 GeckoResult.deny()
             }
@@ -322,6 +329,25 @@ open class BrowserActivity : AppCompatActivity() {
         return HostMatcher.isSameSite(host, base, webapp.allowedHostList())
     }
 
+    private fun loadAfterDelegate(uri: String) {
+        rootView.post { if (!isFinishing) session.loadUri(uri) }
+    }
+
+    /** Handles intent: URIs (app links); falls back to browser_fallback_url, else stays put. */
+    private fun openIntentUri(raw: String) {
+        val intent = try { Intent.parseUri(raw, Intent.URI_INTENT_SCHEME) } catch (e: Exception) {
+            Log.w(TAG, "unparseable intent: URI", e); return
+        }
+        intent.addCategory(Intent.CATEGORY_BROWSABLE); intent.component = null; intent.selector = null
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            val fallback = intent.getStringExtra("browser_fallback_url")
+            Log.i(TAG, "no app for intent: URI; fallback=${fallback != null}")
+            if (fallback != null && (fallback.startsWith("https://") || fallback.startsWith("http://"))) loadAfterDelegate(fallback)
+        }
+    }
+
     protected fun openExternally(uri: Uri) {
         try {
             startActivity(Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE))
@@ -342,40 +368,43 @@ open class BrowserActivity : AppCompatActivity() {
         }
 
         override fun onLoadRequest(session: GeckoSession, request: NavigationDelegate.LoadRequest): GeckoResult<AllowOrDeny> {
+            if (BuildConfig.DEBUG) {
+                Log.d(TAG, "load ${Uri.parse(request.uri).host ?: request.uri.take(40)} target=${request.target} " +
+                    "redirect=${request.isRedirect} gesture=${request.hasUserGesture}")
+            }
+            return decideLoad(session, request)
+        }
+
+        private fun decideLoad(session: GeckoSession, request: NavigationDelegate.LoadRequest): GeckoResult<AllowOrDeny> {
             val uri = Uri.parse(request.uri)
             val scheme = uri.scheme?.lowercase()
             if (scheme != null && scheme !in setOf("http", "https", "about", "data", "blob", "moz-extension", "resource", "file", "javascript")) {
-                // tel:, mailto:, intent:, market: … are handed to Android.
-                if (scheme == "intent") {
-                    try {
-                        val i = Intent.parseUri(request.uri, Intent.URI_INTENT_SCHEME)
-                        i.addCategory(Intent.CATEGORY_BROWSABLE); i.component = null; i.selector = null
-                        startActivity(i)
-                    } catch (e: Exception) {
-                        val fallback = try { Intent.parseUri(request.uri, Intent.URI_INTENT_SCHEME).getStringExtra("browser_fallback_url") } catch (_: Exception) { null }
-                        if (fallback != null) session.loadUri(fallback)
-                    }
-                } else openExternally(uri)
+                // tel:, mailto:, intent:, market: … are handed to Android; the current page stays.
+                if (scheme == "intent") openIntentUri(request.uri) else openExternally(uri)
                 return GeckoResult.deny()
             }
             if (scheme == "http" || scheme == "https") {
                 interceptNavigation(uri, request)?.let { return it }
             }
             if (request.target == NavigationDelegate.TARGET_WINDOW_NEW) {
-                // Web apps are single-window: open target=_blank links in place.
-                session.loadUri(request.uri)
+                // Web apps are single-window: open target=_blank links in place. The load must be
+                // started after this delegate returns; doing it inside the callback lets the deny
+                // cancel it, so the click silently does nothing.
+                loadAfterDelegate(request.uri)
                 return GeckoResult.deny()
             }
             return GeckoResult.allow()
         }
 
         override fun onNewSession(session: GeckoSession, uri: String): GeckoResult<GeckoSession>? {
-            this@BrowserActivity.session.loadUri(uri)
+            loadAfterDelegate(uri)
             return null
         }
 
-        override fun onLoadError(session: GeckoSession, uri: String?, error: WebRequestError): GeckoResult<String> =
-            GeckoResult.fromValue(ErrorPages.build(this@BrowserActivity, uri, error))
+        override fun onLoadError(session: GeckoSession, uri: String?, error: WebRequestError): GeckoResult<String> {
+            Log.w(TAG, "load error ${error.code} (category ${error.category}) for $uri")
+            return GeckoResult.fromValue(ErrorPages.build(this@BrowserActivity, uri, error))
+        }
     }
 
     private val progressDelegate = object : ProgressDelegate {
@@ -391,6 +420,7 @@ open class BrowserActivity : AppCompatActivity() {
         }
 
         override fun onPageStop(session: GeckoSession, success: Boolean) {
+            if (!success) Log.w(TAG, "page stopped without success: $currentUrl")
             progressBar.visibility = View.GONE
             currentlyReloading = false
         }
@@ -417,8 +447,8 @@ open class BrowserActivity : AppCompatActivity() {
 
         override fun onCloseRequest(session: GeckoSession) { finishAndRemoveTask() }
 
-        override fun onCrash(session: GeckoSession) = recoverSession()
-        override fun onKill(session: GeckoSession) = recoverSession()
+        override fun onCrash(session: GeckoSession) { Log.e(TAG, "content process crashed at $currentUrl"); recoverSession() }
+        override fun onKill(session: GeckoSession) { Log.w(TAG, "content process killed at $currentUrl"); recoverSession() }
     }
 
     private fun recoverSession() {
@@ -426,6 +456,8 @@ open class BrowserActivity : AppCompatActivity() {
         session.close()
         session = createSession()
         geckoView.setSession(session)
+        ublockPanel = UblockPanel(this, session).also { it.attach() }
+        runtime.webExtensionController.setTabActive(session, true)
         loadUrl(currentUrl ?: webapp.baseUrl)
     }
 
@@ -536,6 +568,7 @@ open class BrowserActivity : AppCompatActivity() {
         }
         menu.menu.findItem(R.id.cmItemForward).isVisible = canGoForward
         menu.menu.findItem(R.id.cmOpenLinkExternal).isVisible = link != null
+        menu.menu.findItem(R.id.cmUblockPanel).isVisible = ublockPanel.isAvailable
         menu.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.cmItemForward -> session.goForward()
@@ -547,6 +580,7 @@ open class BrowserActivity : AppCompatActivity() {
                 R.id.cmOpenLinkExternal -> openExternally(Uri.parse(url))
                 R.id.cmItemCloseWebApp -> finishAndRemoveTask()
                 R.id.cmMainMenu -> startActivity(Intent(this, MainActivity::class.java))
+                R.id.cmUblockPanel -> ublockPanel.open()
                 R.id.cmShowAdblockProviders -> startActivity(Intent(this, AdblockDashboardActivity::class.java))
                 else -> return@setOnMenuItemClickListener false
             }
@@ -656,5 +690,6 @@ open class BrowserActivity : AppCompatActivity() {
 
         @JvmStatic
         fun contextIdFor(webapp: WebApp) = "nativealpha-webapp-${webapp.ID}"
+        private const val TAG = "NA-Browser"
     }
 }
