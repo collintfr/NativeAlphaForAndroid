@@ -83,7 +83,8 @@ in
         phone-install [flavor] [type]   build and install the APK matching the phone's CPU
         phone-run [flavor] [type]       build, install and launch
         phone-launch [flavor] [type]    launch the installed app
-        phone-logs [flavor] [type]      app + GeckoView logs (Ctrl-C to stop)
+        phone-logs                app, GeckoView and page-console logs (Ctrl-C to stop)
+        phone-logs-all [flavor] [type]  everything from the app's processes
         phone-screenshot [file]   save a screenshot from the phone
         phone-uninstall [flavor] [type] remove the app (and its data)
         phone-apk [flavor] [type] build only; print the APK path
@@ -163,19 +164,27 @@ in
       phone-launch "$@"
     '';
 
-    phone-logs.description = "Show app and GeckoView logs";
+    phone-logs.description = "Show app, browser-engine and page console logs";
     phone-logs.exec = ''
       set -euo pipefail
       ${requireDevice}
+      echo "Native Alpha + GeckoView logs (page JS errors appear as GeckoConsole); Ctrl-C to stop"
+      # Gecko renders pages in separate :tab processes, so filter by tag rather than by PID.
+      adb logcat -v color \
+        'NA-Browser:V' 'GeckoRuntimeHolder:V' 'ShortcutHelper:V' 'IconFetcher:V' 'DownloadHelper:V' \
+        'GeckoConsole:V' 'GeckoViewActivity:V' 'Gecko:I' 'GeckoView:I' 'GeckoSession:I' 'GeckoWebExtension:I' \
+        'AndroidRuntime:E' 'ActivityTaskManager:W' '*:S'
+    '';
+
+    phone-logs-all.description = "Unfiltered logs from all of the app's processes";
+    phone-logs-all.exec = ''
+      set -euo pipefail
+      ${requireDevice}
       ${args}
-      PID=$(adb shell pidof -s "$PKG" | tr -d '\r' || true)
-      if [ -n "$PID" ]; then
-        echo "Logs for $PKG (pid $PID); Ctrl-C to stop"
-        adb logcat -v color --pid="$PID"
-      else
-        echo "$PKG isn't running; showing Gecko/app tags. Start it with: phone-launch"
-        adb logcat -v color 'GeckoRuntimeHolder:V' 'ShortcutHelper:V' 'IconFetcher:V' 'DownloadHelper:V' 'Gecko*:I' 'AndroidRuntime:E' '*:S'
-      fi
+      PIDS=$(adb shell ps -A -o PID,NAME | tr -d '\r' | awk -v p="$PKG" '$2==p || index($2, p":")==1 {print $1}' | paste -sd'|')
+      if [ -z "$PIDS" ]; then echo "$PKG isn't running; start it with: phone-launch" >&2; exit 1; fi
+      echo "PIDs: $PIDS; Ctrl-C to stop"
+      adb logcat -v threadtime | grep --line-buffered -E "^[0-9-]+ [0-9:.]+ +($PIDS) "
     '';
 
     phone-screenshot.description = "Save a screenshot from the phone";

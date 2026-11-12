@@ -36,6 +36,11 @@
             android:iconTint="?attr/colorOnSurface"
             android:icon="@drawable/ic_baseline_home_24" />
 
+        <item android:title="@string/ublock_this_site"
+            android:id="@+id/cmUblockPanel"
+            android:visible="false"
+            android:iconTint="?attr/colorOnSurface"
+            android:icon="@drawable/ic_shield_24"/>
         <item android:title="@string/open_in_browser"
             android:id="@+id/cmOpenLinkExternal"
             android:visible="false"

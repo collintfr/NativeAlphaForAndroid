@@ -312,4 +312,5 @@
     <string name="source_code">Source code</string>
     <string name="open_source_licenses">Open-source licenses</string>
     <string name="about_engine">Engine: GeckoView %1$s · uBlock Origin %2$s</string>
+    <string name="ublock_this_site">Ad blocking for this site</string>
 </resources>
