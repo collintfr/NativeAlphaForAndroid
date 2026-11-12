@@ -129,6 +129,28 @@ A list of used open-source libraries can also be found inside the app ("About" s
 </details>
 
 
+## Development: testing on your phone
+
+The repository includes a [devenv](https://devenv.sh) shell with the JDK and an Android SDK from
+Nix (also works on NixOS), plus commands for installing builds on a phone.
+
+1. Install [Nix](https://nixos.org/download) and [devenv](https://devenv.sh/getting-started/).
+2. On the phone, enable **Developer options → USB debugging** (or **Wireless debugging**).
+3. In the repository:
+
+   ```bash
+   devenv shell
+   phone-pair          # only for Wi-Fi debugging; or plug the phone in via USB
+   phone-run           # build the matching APK, install it and start the app
+   ```
+
+`phone-help` lists everything: `phone-install`, `phone-launch`, `phone-logs`,
+`phone-screenshot`, `phone-uninstall`, `phone-apk`, `app-test`, `app-screenshots`. They default
+to the `extended` (all features) debug build; pass a flavor/type (`phone-run standard debug`) or
+set `APP_FLAVOR`. Debug builds use the package `com.cylonid.nativealpha.pro.debug`, so they
+install next to a store version of Native Alpha. With direnv, `direnv allow` enters the shell
+automatically.
+
 ## License
 Native Alpha is Free Software: You can use, study share and improve it at your
 will. Specifically you can redistribute and/or modify it under the terms of the

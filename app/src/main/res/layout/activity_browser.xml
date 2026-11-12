@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/browserRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <org.mozilla.geckoview.GeckoView
+        android:id="@+id/geckoview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progressBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        android:visibility="gone"
+        app:trackThickness="3dp" />
+
+    <include layout="@layout/view_limit_overlay" />
+
+    <View
+        android:id="@+id/anchorCenterScreen"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:layout_gravity="center" />
+</FrameLayout>

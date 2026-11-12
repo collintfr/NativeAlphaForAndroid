@@ -12,8 +12,6 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <meta-data android:name="android.webkit.WebView.EnableSafeBrowsing"
-        android:value="false" />
 
     <application
         android:name="com.cylonid.nativealpha.util.App"
@@ -31,6 +29,7 @@
             android:name="com.cylonid.nativealpha.MainActivity"
             android:launchMode="singleTask"
             android:theme="@style/AppTheme.Launcher"
+            android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -38,9 +37,10 @@
             </intent-filter>
         </activity>
 
-<!--        Make sure to also copy changes to WebViewActivity in build.gradle-->
+<!--    All web apps run in BrowserActivity (GeckoView). The aliases keep shortcuts created by
+        earlier versions (which targeted WebViewActivity / __WebViewActivity_N) working.-->
         <activity
-            android:name=".WebViewActivity"
+            android:name="com.cylonid.nativealpha.browser.BrowserActivity"
             android:parentActivityName=".MainActivity"
             android:windowSoftInputMode="adjustResize"
             android:icon="@mipmap/native_alpha"
@@ -49,52 +49,49 @@
             android:configChanges="orientation|screenSize|smallestScreenSize|density|screenLayout|uiMode|keyboard|keyboardHidden|navigation"
             android:launchMode="standard"
             android:documentLaunchMode="intoExisting"
-            />
- 
-        <!--Placeholder-->
-        <activity
-            android:name="com.cylonid.nativealpha.SettingsActivity"
-            android:parentActivityName=".MainActivity"
-            android:icon="@mipmap/native_alpha"
-            android:roundIcon="@mipmap/native_alpha"
-            android:theme="@style/AppTheme">
-        </activity>
-        <activity
-            android:name="com.cylonid.nativealpha.WebAppSettingsActivity"
-            android:parentActivityName=".MainActivity"
-            android:icon="@mipmap/native_alpha"
-            android:roundIcon="@mipmap/native_alpha"
-            android:theme="@style/AppTheme">
-        </activity>
+            android:exported="false" />
+        <activity-alias
+            android:name=".WebViewActivity"
+            android:targetActivity="com.cylonid.nativealpha.browser.BrowserActivity" />
+        <activity-alias
+            android:name=".__WebViewActivity_0"
+            android:targetActivity="com.cylonid.nativealpha.browser.BrowserActivity" />
+        <activity-alias
+            android:name=".__WebViewActivity_1"
+            android:targetActivity="com.cylonid.nativealpha.browser.BrowserActivity" />
+        <activity-alias
+            android:name=".__WebViewActivity_2"
+            android:targetActivity="com.cylonid.nativealpha.browser.BrowserActivity" />
+        <activity-alias
+            android:name=".__WebViewActivity_3"
+            android:targetActivity="com.cylonid.nativealpha.browser.BrowserActivity" />
+        <activity-alias
+            android:name=".__WebViewActivity_4"
+            android:targetActivity="com.cylonid.nativealpha.browser.BrowserActivity" />
+        <activity-alias
+            android:name=".__WebViewActivity_5"
+            android:targetActivity="com.cylonid.nativealpha.browser.BrowserActivity" />
+        <activity-alias
+            android:name=".__WebViewActivity_6"
+            android:targetActivity="com.cylonid.nativealpha.browser.BrowserActivity" />
+        <activity-alias
+            android:name=".__WebViewActivity_7"
+            android:targetActivity="com.cylonid.nativealpha.browser.BrowserActivity" />
 
         <activity
-            android:name="com.cylonid.nativealpha.AboutActivity"
+            android:name="com.cylonid.nativealpha.browser.AdblockDashboardActivity"
             android:parentActivityName=".MainActivity"
-            android:icon="@mipmap/native_alpha"
-            android:roundIcon="@mipmap/native_alpha"
-            android:theme="@style/AppTheme">
-        </activity>
-
-        <activity
-            android:name="com.cylonid.nativealpha.activities.NewsActivity"
-            android:parentActivityName=".MainActivity"
-            android:icon="@mipmap/native_alpha"
-            android:roundIcon="@mipmap/native_alpha"
-            android:theme="@style/AppTheme">
-        </activity>
-
-        <activity
-            android:name="com.cylonid.nativealpha.activities.AdblockConfigActivity"
-            android:parentActivityName=".SettingsActivity"
-            android:icon="@mipmap/native_alpha"
-            android:roundIcon="@mipmap/native_alpha"
-            android:theme="@style/AppTheme">
-        </activity>
+            android:configChanges="orientation|screenSize|smallestScreenSize|density|screenLayout|uiMode"
+            android:theme="@style/AppTheme" />
 
         <activity android:name="com.mikepenz.aboutlibraries.ui.LibsActivity"
             android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar">
         </activity>
 
+
+        <receiver
+            android:name="com.cylonid.nativealpha.util.ShortcutPinnedReceiver"
+            android:exported="false" />
 
         <meta-data android:name="com.samsung.android.keepalive.density" android:value="true"/>
         <meta-data android:name="com.samsung.android.multidisplay.keep_process_alive" android:value="true"/>

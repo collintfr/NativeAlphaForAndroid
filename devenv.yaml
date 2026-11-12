@@ -1,0 +1,5 @@
+# nixos-unstable carries Android platform 37.2 and build-tools 37.0.0 (required by GeckoView 160).
+inputs:
+  nixpkgs:
+    url: github:NixOS/nixpkgs/nixos-unstable
+allowUnfree: true
