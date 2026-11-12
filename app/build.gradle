@@ -129,6 +129,9 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.11.0'
     implementation 'com.google.android.material:material:1.12.0' // dialogs/snackbars in the browser
+    // AppCompat < 1.7 doesn't install the NavigationEventDispatcher owner Navigation-Compose 2.10 needs.
+    implementation 'androidx.appcompat:appcompat:1.8.0'
+    implementation 'androidx.fragment:fragment-ktx:1.9.1'
     implementation 'androidx.biometric:biometric:1.1.0'
     implementation "com.mikepenz:aboutlibraries:11.6.3"
     implementation "com.mikepenz:aboutlibraries-core:11.6.3"

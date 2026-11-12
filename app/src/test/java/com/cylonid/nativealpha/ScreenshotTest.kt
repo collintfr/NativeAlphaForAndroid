@@ -108,6 +108,21 @@ class ScreenshotTest {
         save("webapp_settings")
     }
 
+    @Test fun globalSettings() {
+        compose.setContent { NativeAlphaTheme { com.cylonid.nativealpha.ui.GlobalSettingsScreen(vm, {}, {}, {}) } }
+        save("global_settings")
+    }
+
+    @Test fun about() {
+        compose.setContent { NativeAlphaTheme { com.cylonid.nativealpha.ui.AboutScreen {} } }
+        save("about")
+    }
+
+    @Test fun addSheet() {
+        compose.setContent { NativeAlphaTheme { com.cylonid.nativealpha.ui.AddWebAppSheet(vm) {} } }
+        save("add_sheet")
+    }
+
     @Test fun usage() {
         compose.setContent { NativeAlphaTheme { UsageScreen(vm) {} } }
         save("usage_today")
