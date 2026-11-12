@@ -18,6 +18,8 @@ app/extended/**
 app/extendedGithub/**
 
 # devenv
+# Not committed yet: generate it on your machine with `devenv shell`, then remove this line and commit it.
+devenv.lock
 .devenv*
 devenv.local.nix
 .direnv
