@@ -124,6 +124,7 @@ in
         fi
       fi
       cd "$DEVENV_ROOT"
+      [ -f local.properties ] && sed -i '/^ndk\.dir=/d' local.properties
       echo "Building $FLAVOR $TYPE for $ABI…" >&2
       ./gradlew --console=plain -q "assemble$(cap "$FLAVOR")$(cap "$TYPE")" >&2
       APK=$(ls app/build/outputs/apk/"$FLAVOR"/"$TYPE"/*-"$ABI"-*.apk 2>/dev/null | head -1 || true)
@@ -207,7 +208,13 @@ in
     '';
   };
 
-  enterShell = ''
+  # The android module writes ndk.dir pointing at an NDK we don't install; this app has no
+  # native code, so drop it to silence AGP's CXX1102 warnings.
+  enterShell = lib.mkAfter ''
+    if [ -f "$DEVENV_ROOT/local.properties" ]; then
+      sed -i '/^ndk\.dir=/d' "$DEVENV_ROOT/local.properties"
+    fi
+
     echo "Native Alpha dev shell: JDK $(java -version 2>&1 | grep -m1 version | cut -d'"' -f2), Android SDK at $ANDROID_HOME"
     echo "Run 'phone-help' for phone testing commands."
   '';
