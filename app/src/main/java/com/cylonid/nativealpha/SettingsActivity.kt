@@ -9,7 +9,7 @@ import android.webkit.CookieManager
 import android.webkit.WebStorage
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
-import com.cylonid.nativealpha.activities.AdblockConfigActivity
+import com.cylonid.nativealpha.browser.AdblockDashboardActivity
 import com.cylonid.nativealpha.activities.ToolbarBaseActivity
 import com.cylonid.nativealpha.databinding.GlobalSettingsBinding
 import com.cylonid.nativealpha.model.DataManager
@@ -35,7 +35,7 @@ class SettingsActivity : ToolbarBaseActivity<GlobalSettingsBinding>() {
         binding.btnAdblockConfig.setOnClickListener { v: View? ->
             val intent = Intent(
                 this@SettingsActivity,
-                AdblockConfigActivity::class.java
+                AdblockDashboardActivity::class.java
             )
             intent.setAction(Intent.ACTION_VIEW)
             startActivity(intent)

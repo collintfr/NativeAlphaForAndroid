@@ -9,29 +9,23 @@ aboutLibraries {
 
 //https://gist.github.com/shakalaca/6422811
 android {
-     applicationVariants.all { variant ->
-         variant.assembleProvider.get().doLast {
-             delete fileTree('src/main/java/com/cylonid/nativealpha') {
-                 include '**/__WebViewActivity_*.java'
-             }
-             delete fileTree('src/main') {
-                 include '**/AndroidManifest.xml'
-             }
-             ant.move(file: 'src/main/AndroidManifest_original.xml', tofile:'src/main/AndroidManifest.xml')
-
-         }
-     }
+    packaging {
+        // Compress Gecko's native libraries inside the APK (≈60% smaller download).
+        jniLibs { useLegacyPackaging true }
+    }
 
     dependenciesInfo {
         includeInApk = false
     }
-    compileSdk 35
+    compileSdk {
+        version = release(37) { minorApiLevel = 2 }
+    }
     splits {
         abi {
             enable true
             reset()
-            include "armeabi-v7a", "x86", "arm64-v8a", "x86_64"
-            universalApk true
+            include "armeabi-v7a", "arm64-v8a", "x86_64"
+            universalApk false
         }
     }
     flavorDimensions "default"
@@ -64,6 +58,8 @@ android {
     }
     buildFeatures {
         dataBinding true
+        buildConfig true
+        resValues true
         viewBinding true
     }
     kotlinOptions {
@@ -129,9 +125,7 @@ dependencies {
     implementation 'androidx.navigation:navigation-ui:2.8.9'
     implementation 'com.google.code.gson:gson:2.11.0'
     implementation 'io.github.medyo:android-about-page:2.0.0'
-    implementation 'androidx.webkit:webkit:1.13.0'
-    implementation 'com.jakewharton:process-phoenix:2.1.2'
-    testImplementation 'junit:junit:4.13.2'
+        testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.14.1'
     testImplementation 'org.json:json:20250107'
     testImplementation 'org.mockito:mockito-core:5.17.0'
@@ -152,70 +146,43 @@ dependencies {
     implementation "androidx.biometric:biometric:1.1.0"
     implementation 'com.ernestoyaquello.dragdropswiperecyclerview:drag-drop-swipe-recyclerview:1.2.0'
     implementation "androidx.fragment:fragment-ktx:1.8.6"
-    implementation('com.github.Edsuns.AdblockAndroid:ad-filter:v0.9.1') {
-        exclude group: 'org.jetbrains.anko'
-    }
+    implementation 'org.mozilla.geckoview:geckoview:160.0.20261104181552'
     implementation 'androidx.work:work-runtime:2.10.0'
     kapt "com.android.databinding:compiler:3.1.4"
     implementation 'com.google.android.material:material:1.12.0'
 
 
 }
-def renameManifest = tasks.register("renameManifest") {
-    ant.move(file: 'src/main/AndroidManifest.xml', tofile:'src/main/AndroidManifest_original.xml')
-}
-preBuild.dependsOn renameManifest
 
-int NUM_OF_CONTAINERS = 8
+// ---- Bundled uBlock Origin (GPLv3) -------------------------------------------------------------
+// Pinned AMO release; verified by SHA-256 and packaged as an asset so it can be installed into
+// GeckoView on first launch without network access. Bump version/url/sha together.
+def UBO_VERSION = "1.76.0"
+def UBO_URL = "https://addons.mozilla.org/firefox/downloads/file/5225273/ublock_origin-1.76.0.xpi"
+def UBO_SHA256 = "6f20ff6749193599548770539103069c20948dfcd3e61c3089a67da7bfc3be39"
+def uboAssetsDir = layout.buildDirectory.dir("generated/ubo-assets")
 
-def generateWebViewActivities = tasks.register( "extendAndroidManifest", Copy ) {
-    dependsOn(renameManifest)
-    from 'src/main/AndroidManifest_original.xml'
-    into 'src/main'
-
-    String placeholder = "<!--Placeholder-->"
-    String replacement = ""
-    for (int i = 0; i < NUM_OF_CONTAINERS; i++) {
-        replacement += "        <activity\n" +
-                "            android:name=\".__WebViewActivity_" + String.valueOf(i) + "\"\n" +
-                "            android:label=\"@string/app_name\"\n" +
-                "            android:parentActivityName=\".MainActivity\"\n" +
-                "            android:windowSoftInputMode=\"adjustResize\"\n" +
-                "            android:icon=\"@mipmap/native_alpha\"\n" +
-                "            android:roundIcon=\"@mipmap/native_alpha\"\n" +
-                "            android:theme=\"@style/AppTheme.WebView\"\n" +
-                "            android:configChanges=\"orientation|screenSize|smallestScreenSize|density|screenLayout|uiMode|keyboard|keyboardHidden|navigation\"\n" +
-                "            android:launchMode=\"standard\"\n" +
-                "            android:process=\":web_sandbox_" + String.valueOf(i) + "\"\n" +
-                "            android:documentLaunchMode=\"intoExisting\"\n" +
-                "         />\n"
-    }
-
-
-    filter {
-        String line -> line.replaceAll(placeholder, replacement)
-    }
-    rename { String fileName ->
-        fileName.replace("_original", "")
-    }
-}
-preBuild.dependsOn generateWebViewActivities
-
-(0..<NUM_OF_CONTAINERS).each { int i ->
-    TaskProvider<Copy> trTask = tasks.register("createWebViewclass${i}", Copy) {
-        from 'src/main/java/com/cylonid/nativealpha/WebViewActivity.java'
-        into "src/main/java/com/cylonid/nativealpha/__WebViewActivity_${i}"
-        dependsOn(generateWebViewActivities)
-        mustRunAfter(i == 0 ? [] : tasks.getByName("createWebViewclass${i-1}"))
-
-        filter { String line ->
-            line.replaceAll("WebViewActivity", "__WebViewActivity_${i}")
+def downloadUblock = tasks.register("downloadUblockOrigin") {
+    def outFile = uboAssetsDir.map { it.file("extensions/ublock_origin.xpi") }
+    outputs.file(outFile)
+    inputs.property("sha", UBO_SHA256)
+    doLast {
+        def f = outFile.get().asFile
+        f.parentFile.mkdirs()
+        def sha = { File file ->
+            def md = java.security.MessageDigest.getInstance("SHA-256")
+            file.eachByte(65536) { buf, n -> md.update(buf, 0, n) }
+            md.digest().encodeHex().toString()
         }
-
-        rename { String fileName ->
-            fileName.replace("WebViewActivity.java", "__WebViewActivity_${i}.java")
+        if (!f.exists() || sha(f) != UBO_SHA256) {
+            logger.lifecycle("Downloading uBlock Origin ${UBO_VERSION}")
+            new URL(UBO_URL).withInputStream { i -> f.withOutputStream { it << i } }
+            if (sha(f) != UBO_SHA256) {
+                f.delete()
+                throw new GradleException("uBlock Origin checksum mismatch")
+            }
         }
     }
-
-    preBuild.dependsOn(trTask)
 }
+android.sourceSets.main.assets.srcDir(uboAssetsDir.get().asFile)
+preBuild.dependsOn(downloadUblock)

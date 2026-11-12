@@ -36,11 +36,11 @@
             android:iconTint="?attr/colorOnSurface"
             android:icon="@drawable/ic_baseline_home_24" />
 
-        <item android:title="Adblock providers"
-            android:id="@+id/cmShowAdblockProviders"
+        <item android:title="@string/open_in_browser"
+            android:id="@+id/cmOpenLinkExternal"
             android:visible="false"
             android:iconTint="?attr/colorOnSurface"
-            android:icon="@drawable/fingerprint_dialog_fp_icon"/>
+            android:icon="@drawable/ic_baseline_exit_to_app_24"/>
         <item
             android:id="@+id/cmItemMore"
             android:title="@string/more"
@@ -51,10 +51,10 @@
                     android:id="@+id/cmItemCopyUrl"
                     android:iconTint="?attr/colorOnSurface"
                     android:icon="@drawable/ic_baseline_content_copy_24"/>
-                <item android:title="@string/use_standard_context_menu_temporarily"
-                    android:id="@+id/cmFallbackContextmenuTemp"
+                <item android:title="@string/adblock_settings"
+                    android:id="@+id/cmShowAdblockProviders"
                     android:iconTint="?attr/colorOnSurface"
-                    android:icon="@drawable/baseline_menu_open_24"/>
+                    android:icon="@drawable/ic_baseline_content_copy_24"/>
                 <item
                     android:id="@+id/cmItemCloseWebApp"
                     android:iconTint="?attr/colorOnSurface"

@@ -285,7 +285,7 @@ data class WebApp(var baseUrl: String, val ID: Int) {
 
     fun onSwitchSandboxChanged(mSwitch: CompoundButton?, isChecked: Boolean) {
         containerId = if (isChecked) {
-            SandboxManager.getInstance().calculateNextFreeContainerId()
+            ID
         } else {
             Const.NO_CONTAINER
         }

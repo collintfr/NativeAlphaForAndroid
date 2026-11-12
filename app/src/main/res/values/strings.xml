@@ -167,7 +167,7 @@
     <string name="always_show_software_buttons">Always show software navigation buttons</string>
     <string name="use_standard_context_menu_temporarily">Temporarily use standard context menu</string>
     <string name="use_standard_context_menu_permanently">Use standard context menu</string>
-    <string name="adblock_config">Adblock settings</string>
+    <string name="adblock_config">Ad blocker settings (uBlock Origin)</string>
     <string name="adblock_description">The entries created here serve as sources for the ad blocker. The blocking rules are downloaded from the specified URL and kept up to date. Please note that adding too many sources may negatively impact performance. You can create up to 8 entries.</string>
     <string name="add_a_new_adblock_provider">Add a new adblock provider</string>
     <string name="question_delete_item">Are you sure you want to delete this item?</string>
@@ -188,4 +188,24 @@
     <string name="shortcut_added">“%1$s” added to home screen</string>
     <string name="shortcut_pin_failed_title">Couldn’t add shortcut</string>
     <string name="shortcut_pin_failed_text">Your launcher didn’t accept the shortcut request. Only the default launcher can add pinned shortcuts, so if you use KISS or another launcher, set it as the default home app first.\n\nYour web apps are also available as app shortcuts: long-press the Native Alpha icon or search for the web app in your launcher.</string>
+    <string name="open_in_browser">Open in browser</string>
+    <string name="no_app_for_link">No app can open this link</string>
+    <string name="adblock_settings">Ad blocker (uBlock Origin)</string>
+    <string name="adblock_unavailable">uBlock Origin is not available. It is installed automatically the first time a web app is opened; try again in a moment.</string>
+    <string name="download_finished">Downloaded %1$s</string>
+    <string name="download_failed">Download of %1$s failed</string>
+    <string name="leave_page_question">This page asks you to confirm that you want to leave. Data you entered may not be saved.</string>
+    <string name="leave">Leave</string>
+    <string name="stay">Stay</string>
+    <string name="repost_question">Reloading this page will resend the data you submitted.</string>
+    <string name="resend">Resend</string>
+    <string name="error_title_offline">You’re offline or the site can’t be found</string>
+    <string name="error_detail_offline">Check your connection and try again.</string>
+    <string name="error_title_network">The site couldn’t be reached</string>
+    <string name="error_detail_network">The connection was interrupted or timed out.</string>
+    <string name="error_title_security">Secure connection failed</string>
+    <string name="error_detail_security">The site’s certificate couldn’t be verified, so the page wasn’t loaded to protect your data.</string>
+    <string name="error_title_safebrowsing">Deceptive or harmful site blocked</string>
+    <string name="error_detail_safebrowsing">This site was reported as unsafe.</string>
+    <string name="error_title_generic">This page couldn’t be loaded</string>
 </resources>

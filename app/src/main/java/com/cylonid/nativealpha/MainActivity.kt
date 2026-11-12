@@ -15,13 +15,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import com.cylonid.nativealpha.databinding.AddWebsiteDialogueBinding
 import com.cylonid.nativealpha.fragments.webapplist.WebAppListFragment
-import com.cylonid.nativealpha.helper.AdblockLifecycleHelper
 import com.cylonid.nativealpha.model.DataManager
 import com.cylonid.nativealpha.model.WebApp
 import com.cylonid.nativealpha.util.Const
 import com.cylonid.nativealpha.util.EntryPointUtils.entryPointReached
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import io.github.edsuns.adfilter.AdFilter
 
 
 class MainActivity : AppCompatActivity() {
@@ -43,7 +41,6 @@ class MainActivity : AppCompatActivity() {
         fab.setOnClickListener { buildAddWebsiteDialog(getString(R.string.add_webapp)) }
         personalizeToolbar()
 
-        AdblockLifecycleHelper(this).trySyncOperation({ AdFilter.create(applicationContext) })
 
     }
 
