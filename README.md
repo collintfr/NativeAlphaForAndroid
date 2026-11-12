@@ -146,9 +146,14 @@ Nix (also works on NixOS), plus commands for installing builds on a phone.
 
 `phone-help` lists everything: `phone-install`, `phone-launch`, `phone-logs`,
 `phone-screenshot`, `phone-uninstall`, `phone-apk`, `app-test`, `app-screenshots`. They default
-to the `extended` (all features) debug build; pass a flavor/type (`phone-run standard debug`) or
-set `APP_FLAVOR`. Debug builds use the package `com.cylonid.nativealpha.pro.debug`, so they
-install next to a store version of Native Alpha. With direnv, `direnv allow` enters the shell
+to the optimized `extended` (all features) release build; pass a flavor/type (`phone-run extended
+debug` for logging) or set `APP_FLAVOR` / `APP_BUILD_TYPE`.
+
+Release builds are signed with the local debug key (`.android/debug.keystore` in the devenv shell),
+so no keystore setup is needed. Back that file up: Android only accepts updates signed with the
+same key, otherwise you must uninstall first (losing the app's data). The release package is
+`com.cylonid.nativealpha.pro`, the same as the Play Store "Native Alpha +", so uninstall that
+first if you have it. Debug builds (`...pro.debug`) install alongside either. With direnv, `direnv allow` enters the shell
 automatically.
 
 ## License

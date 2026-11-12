@@ -5,7 +5,8 @@
 #   devenv shell        enter the shell (or use direnv with the provided .envrc)
 #   phone-help          list the phone/testing commands below
 #
-# Flavor/build type default to the "extended" (all features) debug build. Override per call
+# Flavor/build type default to the "extended" (all features) release build (optimized, signed
+# with the local debug key). Use `phone-run extended debug` for logging/debugging. Override per call
 # (`phone-run standard`) or for the session (`export APP_FLAVOR=standard`).
 
 let
@@ -22,7 +23,7 @@ let
   # Shared argument parsing: [flavor] [buildType], falling back to env defaults.
   args = ''
     FLAVOR="''${1:-''${APP_FLAVOR:-extended}}"
-    TYPE="''${2:-''${APP_BUILD_TYPE:-debug}}"
+    TYPE="''${2:-''${APP_BUILD_TYPE:-release}}"
     case "$FLAVOR" in standard|extended|extendedGithub) ;; *)
       echo "Unknown flavor '$FLAVOR' (standard | extended | extendedGithub)" >&2; exit 2;; esac
     case "$TYPE" in debug|release) ;; *)
@@ -70,13 +71,13 @@ in
   packages = [ pkgs.git pkgs.unzip ];
 
   env.APP_FLAVOR = lib.mkDefault "extended";
-  env.APP_BUILD_TYPE = lib.mkDefault "debug";
+  env.APP_BUILD_TYPE = lib.mkDefault "release";
 
   scripts = {
     phone-help.description = "List the phone/testing commands";
     phone-help.exec = ''
       cat <<'TXT'
-      Phone testing ([flavor] = extended | standard, [type] = debug | release; defaults: extended debug)
+      Phone testing ([flavor] = extended | standard, [type] = release | debug; defaults: extended release)
 
         phone-pair [ip:port]      pair over Wi-Fi (Android 11+: Developer options → Wireless debugging)
         phone-devices             list connected devices
@@ -132,9 +133,6 @@ in
       if [ -z "$APK" ]; then
         echo "No APK for ABI '$ABI' (built: arm64-v8a, armeabi-v7a, x86_64)" >&2; exit 1
       fi
-      if [ "$TYPE" = release ] && [[ "$APK" == *unsigned* ]]; then
-        echo "Release APK is unsigned and can't be installed; use the debug build or configure signing." >&2; exit 1
-      fi
       echo "$APK"
     '';
 
@@ -145,7 +143,13 @@ in
       ${requireDevice}
       APK=$(phone-apk "$@")
       echo "Installing $(basename "$APK") ($(du -h "$APK" | cut -f1))…"
-      adb install -r -t "$APK"
+      if ! adb install -r -t "$APK"; then
+        echo >&2
+        echo "Install failed. If it mentions INSTALL_FAILED_UPDATE_INCOMPATIBLE, the installed copy was signed" >&2
+        echo "with a different key (another machine/checkout, or the Play Store app). Run phone-uninstall" >&2
+        echo "(this deletes its web apps and usage data) and try again." >&2
+        exit 1
+      fi
     '';
 
     phone-launch.description = "Launch the installed app";
