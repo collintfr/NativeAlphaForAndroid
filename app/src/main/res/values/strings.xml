@@ -183,4 +183,9 @@
     <string name="adblock_warning_text">Your current ad blocker settings may cause problems or crashes. Unfortunately, not all filter lists work on every device.\n\nIt is recommended to clear the filter lists and repopulate them as a test.</string>
     <string name="warning">Warning</string>
 
+    <string name="retry">Retry</string>
+    <string name="add_to_home_screen">Add to home screen</string>
+    <string name="shortcut_added">“%1$s” added to home screen</string>
+    <string name="shortcut_pin_failed_title">Couldn’t add shortcut</string>
+    <string name="shortcut_pin_failed_text">Your launcher didn’t accept the shortcut request. Only the default launcher can add pinned shortcuts, so if you use KISS or another launcher, set it as the default home app first.\n\nYour web apps are also available as app shortcuts: long-press the Native Alpha icon or search for the web app in your launcher.</string>
 </resources>

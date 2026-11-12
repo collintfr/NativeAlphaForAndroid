@@ -10,6 +10,7 @@ import com.cylonid.nativealpha.WebAppSettingsActivity
 import com.cylonid.nativealpha.helper.BiometricPromptHelper
 import com.cylonid.nativealpha.util.Const
 import com.cylonid.nativealpha.util.ShortcutIconUtils
+import com.cylonid.nativealpha.util.ShortcutHelper
 import com.cylonid.nativealpha.util.Utility
 import java.util.*
 
@@ -142,6 +143,7 @@ data class WebApp(var baseUrl: String, val ID: Int) {
             listOf(ID),
             activity
         )
+        ShortcutHelper.deleteIcon(activity, ID)
     }
 
 

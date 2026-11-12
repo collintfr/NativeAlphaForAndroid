@@ -15,6 +15,7 @@ import com.cylonid.nativealpha.util.App;
 import com.cylonid.nativealpha.util.Const;
 import com.cylonid.nativealpha.util.InvalidChecksumException;
 import com.cylonid.nativealpha.util.ShortcutIconUtils;
+import com.cylonid.nativealpha.util.ShortcutHelper;
 import com.cylonid.nativealpha.util.Utility;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -106,6 +107,7 @@ public class DataManager {
         editor.putInt(shared_pref_max_id, max_assigned_ID);
         if (SandboxManager.getInstance() != null) editor.putInt(shared_pref_next_container, SandboxManager.getInstance().getNextContainer());
         editor.apply();
+        ShortcutHelper.publishDynamicShortcuts(App.getAppContext());
     }
 
 

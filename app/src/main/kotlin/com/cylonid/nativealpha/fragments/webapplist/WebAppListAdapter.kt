@@ -12,6 +12,9 @@ import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat.startActivity
 import com.cylonid.nativealpha.R
+import com.cylonid.nativealpha.ShortcutDialogFragment
+import android.widget.PopupMenu
+import androidx.fragment.app.FragmentActivity
 import com.cylonid.nativealpha.WebAppSettingsActivity
 import com.cylonid.nativealpha.model.DataManager
 import com.cylonid.nativealpha.model.WebApp
@@ -37,6 +40,25 @@ class WebAppListAdapter(dataSet: List<WebApp> = emptyList(), private val activit
             openWebView(
                 item
             )
+        }
+        viewHolder.titleView.setOnLongClickListener { anchor ->
+            val menu = PopupMenu(activityOfFragment, anchor)
+            menu.menu.add(0, 1, 0, R.string.add_to_home_screen)
+            menu.menu.add(0, 2, 1, R.string.action_settings)
+            menu.setOnMenuItemClickListener { mi ->
+                when (mi.itemId) {
+                    1 -> (activityOfFragment as? FragmentActivity)?.let {
+                        ShortcutDialogFragment.newInstance(item).show(it.supportFragmentManager, "SCFetcher-" + item.ID)
+                    }
+                    2 -> activityOfFragment.startActivity(
+                        Intent(activityOfFragment, WebAppSettingsActivity::class.java)
+                            .putExtra(Const.INTENT_WEBAPPID, item.ID)
+                    )
+                }
+                true
+            }
+            menu.show()
+            true
         }
     }
 

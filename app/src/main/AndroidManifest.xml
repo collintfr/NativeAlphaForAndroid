@@ -96,6 +96,10 @@
         </activity>
 
 
+        <receiver
+            android:name="com.cylonid.nativealpha.util.ShortcutPinnedReceiver"
+            android:exported="false" />
+
         <meta-data android:name="com.samsung.android.keepalive.density" android:value="true"/>
         <meta-data android:name="com.samsung.android.multidisplay.keep_process_alive" android:value="true"/>
         <!--        https://developer.samsung.com/samsung-dex/modify-optimizing.html-->

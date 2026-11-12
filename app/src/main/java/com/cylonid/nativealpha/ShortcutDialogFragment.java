@@ -30,6 +30,7 @@ import com.cylonid.nativealpha.util.App;
 import com.cylonid.nativealpha.util.Const;
 import com.cylonid.nativealpha.util.NotificationUtils;
 import com.cylonid.nativealpha.util.ShortcutIconUtils;
+import com.cylonid.nativealpha.util.ShortcutHelper;
 import com.cylonid.nativealpha.util.WebViewLauncher;
 import com.google.android.material.snackbar.Snackbar;
 import com.mikhaellopez.circularprogressbar.CircularProgressBar;
@@ -90,7 +91,7 @@ public class ShortcutDialogFragment extends DialogFragment  {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (faviconFetcherThread.isAlive()) {
+        if (faviconFetcherThread != null && faviconFetcherThread.isAlive()) {
             faviconFetcherThread.interrupt();
             Log.d("CLEANUP", "Stopped running faviconfetcher");
         }
@@ -333,39 +334,9 @@ public class ShortcutDialogFragment extends DialogFragment  {
 
 
     private void addShortcutToHomeScreen(Bitmap bitmap) {
-        Intent intent = WebViewLauncher.createWebViewIntent(webapp, requireActivity());
-
-        IconCompat icon;
-        if (bitmap != null)
-            icon = IconCompat.createWithBitmap(bitmap);
-        else
-            icon = IconCompat.createWithResource(requireActivity(), R.mipmap.native_alpha_shortcut);
-
-
-        String final_title = uiTitle.getText().toString();
-        if (final_title.equals(""))
-            final_title = webapp.getTitle();
-        if (webapp.getTitle().equals("")) {
-            final_title = "Unknown";
-        }
-
-        if (ShortcutManagerCompat.isRequestPinShortcutSupported(requireActivity())) {
-
-            ShortcutInfoCompat pinShortcutInfo = new ShortcutInfoCompat.Builder(requireActivity(), final_title)
-                    .setIcon(icon)
-                    .setShortLabel(final_title)
-                    .setLongLabel(final_title)
-                    .setIntent(intent)
-                    .build();
-            String newScId = pinShortcutInfo.getId();
-            ShortcutManager scManager = App.getAppContext().getSystemService(ShortcutManager.class);
-            if(!scManager.getPinnedShortcuts().stream().anyMatch(s -> s.getId().equals(newScId))) {
-                ShortcutManagerCompat.requestPinShortcut(requireActivity(), pinShortcutInfo, null);
-            } else {
-                NotificationUtils.showToast(requireActivity(), getString(R.string.shortcut_already_exists));
-            }
-        }
-
+        String finalTitle = uiTitle.getText().toString().trim();
+        if (finalTitle.isEmpty()) finalTitle = webapp.getTitle();
+        ShortcutHelper.requestPinShortcut(requireActivity(), webapp, finalTitle, bitmap);
     }
 
     private void prepareFailedUI() {
