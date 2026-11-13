@@ -191,7 +191,10 @@ fun WebAppSettingsScreen(vm: AppViewModel, webAppId: Int, onBack: () -> Unit) {
                     }
                     SwitchRow(stringResource(R.string.allow_http), draft.isAllowHttp) { update { isAllowHttp = it } }
                     SwitchRow(stringResource(R.string.clear_cache_on_exit), draft.isClearCache) { update { isClearCache = it } }
-                    SwitchRow(stringResource(R.string.restore_page), draft.isRestorePage, stringResource(R.string.restore_page_hint)) { update { isRestorePage = it } }
+                    SwitchRow(stringResource(R.string.private_mode), draft.isPrivateMode, stringResource(R.string.private_mode_hint)) { update { isPrivateMode = it } }
+                    if (!draft.isPrivateMode) {
+                        SwitchRow(stringResource(R.string.restore_page), draft.isRestorePage, stringResource(R.string.restore_page_hint)) { update { isRestorePage = it } }
+                    }
                 }
                 section(context.getString(R.string.section_permissions)) {
                     SwitchRow(stringResource(R.string.location_access), draft.isAllowLocationAccess) { update { isAllowLocationAccess = it } }

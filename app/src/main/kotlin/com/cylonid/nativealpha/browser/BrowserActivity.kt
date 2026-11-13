@@ -204,8 +204,9 @@ open class BrowserActivity : AppCompatActivity() {
             .displayMode(GeckoSessionSettings.DISPLAY_MODE_STANDALONE)
             .suspendMediaWhenInactive(!webapp.isAllowMediaPlaybackInBackground)
             .useTrackingProtection(true)
+            .usePrivateMode(webapp.isPrivateMode)
             .apply {
-                if (webapp.isUseContainer) contextId(contextIdFor(webapp))
+                if (webapp.isUseContainer && !webapp.isPrivateMode) contextId(contextIdFor(webapp))
                 val ua = webapp.userAgent
                 if (webapp.isUseCustomUserAgent && !ua.isNullOrBlank()) {
                     userAgentOverride(ua.replace("\u0000", "").replace("\n", "").replace("\r", ""))
@@ -235,7 +236,7 @@ open class BrowserActivity : AppCompatActivity() {
     }
 
     private fun loadInitialPage() {
-        val saved = if (webapp.isRestorePage) SessionStore.load(this, webapp.ID) else null
+        val saved = if (webapp.isRestorePage && !webapp.isPrivateMode) SessionStore.load(this, webapp.ID) else null
         if (saved != null) {
             session.restoreState(saved)
         } else {
@@ -426,7 +427,7 @@ open class BrowserActivity : AppCompatActivity() {
         }
 
         override fun onSessionStateChange(session: GeckoSession, state: GeckoSession.SessionState) {
-            if (webapp.isRestorePage) SessionStore.save(this@BrowserActivity, webapp.ID, state)
+            if (webapp.isRestorePage && !webapp.isPrivateMode) SessionStore.save(this@BrowserActivity, webapp.ID, state)
         }
     }
 

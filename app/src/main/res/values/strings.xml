@@ -259,6 +259,8 @@
     <string name="enable_javascript">JavaScript</string>
     <string name="isolated_storage">Isolated storage</string>
     <string name="isolated_storage_hint">Separate cookies and logins from other web apps</string>
+    <string name="private_mode">Private mode</string>
+    <string name="private_mode_hint">Like a Firefox private tab: no cookies, logins or history are kept after closing</string>
     <string name="clear_cache_on_exit">Clear cache when leaving</string>
     <string name="restore_page">Restore last page</string>
     <string name="restore_page_hint">Reopen where you left off instead of the start page</string>
