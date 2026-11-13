@@ -22,6 +22,8 @@ data class WebApp(var baseUrl: String, val ID: Int) {
     var isAllowJs = true
     var isRequestDesktop = false
     var isClearCache = false
+    /** Gecko private session: nothing (cookies, storage, history) survives closing the app. */
+    var isPrivateMode = false
     var isUseAdblock = false
     var isSendSavedataRequest = false
     var isBlockImages = false
@@ -117,6 +119,7 @@ data class WebApp(var baseUrl: String, val ID: Int) {
         isActiveEntry = other.isActiveEntry
         isRequestDesktop = other.isRequestDesktop
         isClearCache = other.isClearCache
+        isPrivateMode = other.isPrivateMode
         isUseAdblock = other.isUseAdblock
         isSendSavedataRequest = other.isSendSavedataRequest
         isBlockImages = other.isBlockImages
